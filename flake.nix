@@ -393,38 +393,6 @@
             #   '';
             #   postInstall = "";
             # };
-            default =
-              let
-                command = pkgs.writeShellScriptBin "command" ''
-                  set -e
-                  cd /config
-                  ${pkgs.prometheus-snmp-exporter}/bin/generator generate --no-fail-on-parse-errors --output-path=/tmp/snmp.yml
-                  cd /tmp
-                  exec ${pkgs.prometheus-snmp-exporter}/bin/snmp_exporter --web.listen-address=:9116 --config.file=/tmp/snmp.yml
-                '';
-              in
-              pkgs.dockerTools.buildLayeredImage {
-                name = "snmp-exporter";
-                tag = "latest";
-                maxLayers = 2;
-                config = {
-                  Cmd = [
-                    "${command}/bin/command"
-                  ];
-                  Env = [
-                    "TZ=UTC"
-                    "MIBDIRS=${pkgs.lib.concatStringsSep ":" (map (mib: "${mib}/share/snmp/mibs") (mib-packages pkgs))}"
-                    "SSL_CERT_FILE=${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt"
-                  ];
-                  ExposedPorts = {
-                    "9116/tcp" = { };
-                  };
-                  Volumes = {
-                    "/config" = { };
-                    "/tmp" = { };
-                  };
-                };
-              };
           }
         ]
       );
