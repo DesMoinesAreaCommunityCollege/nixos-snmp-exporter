@@ -90,6 +90,23 @@
         "UDP-MIB"
       ];
       ubnt-dl-url = "https://dl.ubnt-ut.com/snmp";
+      # CableLabs only serves the latest revision at the plain URL, and moves
+      # superseded revisions to a dated archive URL. Try the archive URL first
+      # so the pinned hash keeps working after CableLabs publishes a new revision.
+      # `revision` is the MIB's LAST-UPDATED date.
+      cablelabs-mib =
+        {
+          mibname,
+          revision,
+          hash,
+        }:
+        {
+          inherit mibname hash;
+          urls = [
+            "https://mibs.cablelabs.com/MIBs/DOCSIS/Archive-PreviousVersions/${mibname}-${revision}.txt"
+            "https://mibs.cablelabs.com/MIBs/DOCSIS/${mibname}.mib"
+          ];
+        };
     in
     {
       packages = forAllSystems (
@@ -102,7 +119,7 @@
                 name = name;
                 pname = name;
                 src = pkgs.fetchurl {
-                  url = value.url;
+                  urls = value.urls or [ value.url ];
                   hash = value.hash;
                 };
                 dontUnpack = true;
@@ -187,29 +204,29 @@
                 url = "https://raw.githubusercontent.com/Poil/MIBs/141ba7f350a739a01d8e56f2aa4a843d46cfa259/DNS-SERVER-MIB";
                 hash = "sha256-TXd959duL32ky51bH94gwTtV5DaX38a2KGVEIzs7wxY=";
               };
-              docs-pnm-mib = {
+              docs-pnm-mib = cablelabs-mib {
                 mibname = "DOCS-PNM-MIB";
-                url = "http://mibs.cablelabs.com/MIBs/DOCSIS/DOCS-PNM-MIB.mib";
+                revision = "2024-07-05";
                 hash = "sha256-CuaoNGbsgaeks24dNb1/cId+cfOPzdT7hhpIp5cVpgQ=";
               };
-              dsg-if-mib = {
+              dsg-if-mib = cablelabs-mib {
                 mibname = "DSG-IF-MIB";
-                url = "http://mibs.cablelabs.com/MIBs/DOCSIS/DSG-IF-MIB.mib";
+                revision = "2023-11-22";
                 hash = "sha256-kBNnEybswa0LF6H+LaldD40RuCyko52Q4LckCccjNZw=";
               };
-              docs-if3-mib = {
+              docs-if3-mib = cablelabs-mib {
                 mibname = "DOCS-IF3-MIB";
-                url = "http://mibs.cablelabs.com/MIBs/DOCSIS/DOCS-IF3-MIB.mib";
+                revision = "2026-04-23";
                 hash = "sha256-71dfVEpTYYICxvSjdCvN+ejnSF40NhPSs841cSEAnFg=";
               };
-              docs-if31-mib = {
+              docs-if31-mib = cablelabs-mib {
                 mibname = "DOCS-IF31-MIB";
-                url = "http://mibs.cablelabs.com/MIBs/DOCSIS/DOCS-IF31-MIB.mib";
-                hash = "sha256-IlIGlfnE2IxQjutJeQkr0oRPDbcvJ1caSGPBkNI9msU=";
+                revision = "2026-09-10";
+                hash = "sha256-mAfTjlVUsGG3O4XoeBdcWDt3BwZdaCze502VxIuKkw8=";
               };
-              docs-if40-mib = {
+              docs-if40-mib = cablelabs-mib {
                 mibname = "DOCS-IF40-MIB";
-                url = "http://mibs.cablelabs.com/MIBs/DOCSIS/DOCS-IF40-MIB.mib";
+                revision = "2025-02-20";
                 hash = "sha256-WCaK1akdANIRzgQRAPSACoS9QcSihB04Pm3RLikW9pw=";
               };
               uri-tc-mib = {
