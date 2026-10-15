@@ -481,6 +481,7 @@
           default = {
             type = "app";
             program = "${generate}/bin/generate";
+            meta.description = "Generate snmp_exporter configuration using the bundled MIBs";
           };
         }
       );
