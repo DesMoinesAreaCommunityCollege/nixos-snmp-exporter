@@ -25,6 +25,37 @@
         };
       forAllSystems = (function: nixpkgs.lib.genAttrs platforms (system: function (packages system)));
 
+      mib-packages =
+        pkgs: [
+          pkgs.net-snmp.out
+          self.packages.${pkgs.stdenv.hostPlatform.system}.cisco-mibs.v2
+          self.packages.${pkgs.stdenv.hostPlatform.system}.cisco-mibs.v1
+          self.packages.${pkgs.stdenv.hostPlatform.system}.powernet-mib
+          self.packages.${pkgs.stdenv.hostPlatform.system}.ianacharset-mib
+          self.packages.${pkgs.stdenv.hostPlatform.system}.ianaiftype-mib
+          self.packages.${pkgs.stdenv.hostPlatform.system}.ianaprinter-mib
+          self.packages.${pkgs.stdenv.hostPlatform.system}.printer-mib
+          self.packages.${pkgs.stdenv.hostPlatform.system}.ubnt-mib
+          self.packages.${pkgs.stdenv.hostPlatform.system}.ubnt-unifi-mib
+          self.packages.${pkgs.stdenv.hostPlatform.system}.ubnt-airmax-mib
+          self.packages.${pkgs.stdenv.hostPlatform.system}.remotekvmdevice-mib
+          self.packages.${pkgs.stdenv.hostPlatform.system}.mikrotik-mib
+          self.packages.${pkgs.stdenv.hostPlatform.system}.palo-alto-mibs
+          # self.packages.${pkgs.stdenv.hostPlatform.system}.informacast-mibs
+          # self.packages.${pkgs.stdenv.hostPlatform.system}.liebert-mibs-1
+          # self.packages.${pkgs.stdenv.hostPlatform.system}.liebert-mibs-2
+          # self.packages.${pkgs.stdenv.hostPlatform.system}.anetd-mibs
+          self.packages.${pkgs.stdenv.hostPlatform.system}.geist-v3-mib
+          self.packages.${pkgs.stdenv.hostPlatform.system}.geist-v4-mib
+          self.packages.${pkgs.stdenv.hostPlatform.system}.dns-server-mib
+          self.packages.${pkgs.stdenv.hostPlatform.system}.dsg-if-mib
+          self.packages.${pkgs.stdenv.hostPlatform.system}.docs-if3-mib
+          self.packages.${pkgs.stdenv.hostPlatform.system}.docs-if31-mib
+          self.packages.${pkgs.stdenv.hostPlatform.system}.docs-if40-mib
+          self.packages.${pkgs.stdenv.hostPlatform.system}.docs-pnm-mib
+          self.packages.${pkgs.stdenv.hostPlatform.system}.uri-tc-mib
+        ];
+
       net-snmp-mibs = [
         "DISMAN-EVENT-MIB"
         "DISMAN-SCHEDULE-MIB"
@@ -379,10 +410,10 @@
                   self.packages.${pkgs.stdenv.hostPlatform.system}.remotekvmdevice-mib
                   self.packages.${pkgs.stdenv.hostPlatform.system}.mikrotik-mib
                   self.packages.${pkgs.stdenv.hostPlatform.system}.palo-alto-mibs
-                  self.packages.${pkgs.stdenv.hostPlatform.system}.informacast-mibs
-                  self.packages.${pkgs.stdenv.hostPlatform.system}.liebert-mibs-1
-                  self.packages.${pkgs.stdenv.hostPlatform.system}.liebert-mibs-2
-                  self.packages.${pkgs.stdenv.hostPlatform.system}.anetd-mibs
+                  # self.packages.${pkgs.stdenv.hostPlatform.system}.informacast-mibs
+                  # self.packages.${pkgs.stdenv.hostPlatform.system}.liebert-mibs-1
+                  # self.packages.${pkgs.stdenv.hostPlatform.system}.liebert-mibs-2
+                  # self.packages.${pkgs.stdenv.hostPlatform.system}.anetd-mibs
                   self.packages.${pkgs.stdenv.hostPlatform.system}.geist-v3-mib
                   self.packages.${pkgs.stdenv.hostPlatform.system}.geist-v4-mib
                   self.packages.${pkgs.stdenv.hostPlatform.system}.dns-server-mib
@@ -426,62 +457,30 @@
           }
         ]
       );
-      devShells = forAllSystems (
+      devShells = forAllSystems (pkgs: {
+        default = pkgs.mkShell {
+          buildInputs = [
+            pkgs.net-snmp
+            pkgs.prometheus-snmp-exporter
+          ];
+          shellHook = ''
+            export name="snmp-exporter"
+            export MIBDIRS=${pkgs.lib.concatStringsSep ":" (map (mib: "${mib}/share/snmp/mibs") (mib-packages pkgs))}
+          '';
+        };
+      });
+      apps = forAllSystems (
         pkgs:
         let
-          mib-packages = [
-            pkgs.net-snmp.out
-            self.packages.${pkgs.stdenv.hostPlatform.system}.cisco-mibs.v2
-            self.packages.${pkgs.stdenv.hostPlatform.system}.cisco-mibs.v1
-            self.packages.${pkgs.stdenv.hostPlatform.system}.powernet-mib
-            self.packages.${pkgs.stdenv.hostPlatform.system}.ianacharset-mib
-            self.packages.${pkgs.stdenv.hostPlatform.system}.ianaiftype-mib
-            self.packages.${pkgs.stdenv.hostPlatform.system}.ianaprinter-mib
-            self.packages.${pkgs.stdenv.hostPlatform.system}.printer-mib
-            self.packages.${pkgs.stdenv.hostPlatform.system}.ubnt-mib
-            self.packages.${pkgs.stdenv.hostPlatform.system}.ubnt-unifi-mib
-            self.packages.${pkgs.stdenv.hostPlatform.system}.ubnt-airmax-mib
-            self.packages.${pkgs.stdenv.hostPlatform.system}.remotekvmdevice-mib
-            self.packages.${pkgs.stdenv.hostPlatform.system}.mikrotik-mib
-            self.packages.${pkgs.stdenv.hostPlatform.system}.palo-alto-mibs
-            self.packages.${pkgs.stdenv.hostPlatform.system}.informacast-mibs
-            self.packages.${pkgs.stdenv.hostPlatform.system}.liebert-mibs-1
-            self.packages.${pkgs.stdenv.hostPlatform.system}.liebert-mibs-2
-            self.packages.${pkgs.stdenv.hostPlatform.system}.anetd-mibs
-            self.packages.${pkgs.stdenv.hostPlatform.system}.geist-v3-mib
-            self.packages.${pkgs.stdenv.hostPlatform.system}.geist-v4-mib
-            self.packages.${pkgs.stdenv.hostPlatform.system}.dns-server-mib
-            self.packages.${pkgs.stdenv.hostPlatform.system}.dsg-if-mib
-            self.packages.${pkgs.stdenv.hostPlatform.system}.docs-if3-mib
-            self.packages.${pkgs.stdenv.hostPlatform.system}.docs-if31-mib
-            self.packages.${pkgs.stdenv.hostPlatform.system}.docs-if40-mib
-            self.packages.${pkgs.stdenv.hostPlatform.system}.docs-pnm-mib
-            self.packages.${pkgs.stdenv.hostPlatform.system}.uri-tc-mib
-          ];
+          generate = pkgs.writeScriptBin "generate" ''
+            export MIBDIRS=${pkgs.lib.concatStringsSep ":" (map (mib: "${mib}/share/snmp/mibs") (mib-packages pkgs))}
+            ${pkgs.prometheus-snmp-exporter}/bin/generator generate --log.level=info "$@"
+          '';
         in
         {
-          default = pkgs.mkShell {
-            buildInputs = [
-              pkgs.net-snmp
-              pkgs.prometheus-snmp-exporter
-            ];
-            shellHook = ''
-              export name="snmp-exporter"
-              export MIBDIRS=${pkgs.lib.concatStringsSep ":" (map (mib: "${mib}/share/snmp/mibs") mib-packages)}
-            '';
-          };
-          apps = {
-            default =
-              let
-                generate = pkgs.writeScriptBin "generate" ''
-                  export MIBDIRS=${pkgs.lib.concatStringsSep ":" (map (mib: "${mib}/share/snmp/mibs") mib-packages)}
-                  ${pkgs.prometheus-snmp-exporter}/bin/generator generate --log.level=info "$@"
-                '';
-              in
-              {
-                type = "app";
-                program = "${generate}/bin/generate";
-              };
+          default = {
+            type = "app";
+            program = "${generate}/bin/generate";
           };
         }
       );
