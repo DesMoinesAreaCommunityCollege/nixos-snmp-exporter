@@ -127,9 +127,16 @@
                 dontConfigure = true;
                 dontBuild = true;
                 dontFixup = true;
+                # `patches` apply to the downloaded MIB as a single file, so
+                # the paths in their headers don't matter.
                 installPhase = ''
+                  cp $src mib
+                  chmod u+w mib
+                  for p in ${builtins.concatStringsSep " " (map (p: "${p}") (value.patches or [ ]))}; do
+                    patch --forward --fuzz=0 mib < "$p"
+                  done
                   install -d $out/share/snmp/mibs
-                  install -m 0444 $src $out/share/snmp/mibs/${value.mibname}
+                  install -m 0444 mib $out/share/snmp/mibs/${value.mibname}
                 '';
                 postInstall = "";
               }
@@ -144,6 +151,11 @@
                   mibname = "PowerNet-MIB";
                   url = "https://download.schneider-electric.com/files?p_Doc_Ref=APC_POWERNETMIB_EN&p_enDocType=Firmware&p_File_Name=powernet${shortVersion}.mib";
                   hash = "sha256-XU0ORHA3gILD3+snl9gZONRhvm6Kni9ZACyTVks0fgA=";
+                  # APC SRT NMCs index upsHighPrecBatteryPackTable with three
+                  # components, not the MIB's two, so rows collide and
+                  # snmp_exporter fails the whole scrape. From
+                  # prometheus-community/snmp@5f68d3e apc/patches.
+                  patches = [ ./patches/upsHighPrecBatteryExtraIndex.patch ];
                 };
               ianacharset-mib = {
                 mibname = "IANA-CHARSET-MIB";
